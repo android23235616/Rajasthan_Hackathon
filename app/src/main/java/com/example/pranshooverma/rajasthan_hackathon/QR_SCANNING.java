@@ -45,7 +45,7 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
     //for location
     private Location mLastLocation;
-    private GoogleApiClient mGoogleApiClient;
+    public static GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private boolean mRequestingLocationUpdates = false;
     private static int UPDATE_INTERVAL = 10000; // 10 sec
@@ -93,6 +93,7 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
                     Display(result.getContents());
                     JSONObject obj = new JSONObject(result.getContents());
                     chasis = obj.getString("chasis_number");
+                    constants.CHASSIS = chasis;
                     progress.setMessage("Do not minimize the screen. Please Wait");
                     progress.setCancelable(false);
                     progress.show();
