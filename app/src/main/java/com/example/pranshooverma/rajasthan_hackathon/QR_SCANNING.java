@@ -17,7 +17,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -34,9 +33,6 @@ import com.google.zxing.integration.android.IntentResult;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
@@ -124,9 +120,9 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
     }
 
-    private void fetch_vehicle_wifi_mac(final String chasis) {
+    private void fetch_vehicle_wifi_mac(final String chasis,String lat,String lon,String SSO) {
         //add volley in this for getting the mac address of the wifi
-        StringRequest stringReques = new StringRequest(Request.Method.GET, constants.qr_send_url_to_get_ap + "?chesis=" + chasis, new Response.Listener<String>() {
+        StringRequest stringReques = new StringRequest(Request.Method.GET, constants.qr_send_url_to_get_ap + "?chesis=" + chasis+"&ssos=12345"+"&lat="+lat+"&lon="+lon, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 //       progress.dismiss();
@@ -159,25 +155,24 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
         }
     }
 
-    public class doIn extends AsyncTask<Void, Void, String> {
+    public class doIn extends AsyncTask<Object, Object, String[]> {
 
         @Override
-        protected String doInBackground(Void... voids) {
+        protected String[] doInBackground(Object... voids) {
 
-            String s = displayLocation();
+            String[] s = displayLocation();
             return s;
         }
 
 
         @Override
-        protected void onPostExecute(String s) {
-            if (s != null) {
+        protected void onPostExecute(String[] s) {
+            if (s[0] != null) {
                 progress.dismiss();
 
                 if(chasis!=null)
                 {
-                    Toast.makeText(QR_SCANNING.this, s+chasis, Toast.LENGTH_SHORT).show();
-                    fetch_vehicle_wifi_mac(chasis);
+                    fetch_vehicle_wifi_mac(chasis,s[0],s[1],"12345");//rightmost is sso id
                 }
                 else
                 {
@@ -191,7 +186,7 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
         }
     }
 
-    private String displayLocation() {
+    private String[] displayLocation() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -200,7 +195,8 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
-            return "";
+           String [] r=new String[2];
+            return r;
         }
 
         mLastLocation = LocationServices.FusedLocationApi
@@ -208,10 +204,12 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
         if(mLastLocation!=null)
         {
-            String lat= String.valueOf(mLastLocation.getLatitude());
-            String longi= String.valueOf(mLastLocation.getLongitude());
+            String[] ret=new String[2];
+            ret[0]= String.valueOf(mLastLocation.getLatitude());
+            ret[1]= String.valueOf(mLastLocation.getLongitude());
 
-            return lat+"\n"+longi;
+            return ret;
+            //lat long
         }
 
         else
