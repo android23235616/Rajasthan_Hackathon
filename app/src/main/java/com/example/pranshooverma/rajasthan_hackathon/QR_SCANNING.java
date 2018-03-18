@@ -31,12 +31,16 @@ import com.google.android.gms.location.LocationServices;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import static com.example.pranshooverma.rajasthan_hackathon.WiFiCheckService.SSOS;
 
 public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     Button scan_qr;
+    Button endTrip;
 
     private IntentIntegrator qrscan;
 
@@ -66,6 +70,8 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
         initialize();
 
+        updateUI();
+
         //setting onClick Listener of android
         scan_qr.setOnClickListener(new View.OnClickListener() {
 
@@ -79,6 +85,18 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
         });
 
+        endTrip.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                endPassengerTrip();
+            }
+        });
+    }
+
+    private void endPassengerTrip() {
+
+        String[] res = displayLocation();
+        updateData(res);
     }
 
     @Override
@@ -140,6 +158,9 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
                 Intent serviceIntent = new Intent(QR_SCANNING.this, WiFiCheckService.class);
                 startService(serviceIntent);
 
+                constants.tripStarted = true;
+                updateUI();
+
             }
         }, new Response.ErrorListener() {
             @Override
@@ -152,12 +173,26 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
         queue.add(stringReques);
     }
 
+    private void updateUI() {
+
+        if(constants.tripStarted == false){
+            scan_qr.setVisibility(View.VISIBLE);
+            endTrip.setVisibility(View.GONE);
+        }
+        else if(constants.tripStarted == true){
+            scan_qr.setVisibility(View.GONE);
+            endTrip.setVisibility(View.VISIBLE);
+        }
+
+    }
+
     private void Display(String s) {
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
     }
 
     private void initialize() {
         scan_qr = (Button) findViewById(R.id.scan_qr);
+        endTrip = (Button) findViewById(R.id.end_trip);
         qrscan = new IntentIntegrator(this);
         progress = new ProgressDialog(this);
         mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
@@ -260,4 +295,38 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
         doIn a=new doIn();
         a.execute();
     }
+
+    private void updateData(String[] res) {
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        String URL = constants.url_stop_trip+"?chesis="+constants.CHASSIS+"&SSOS=1234"+"&lat="+res[0]+"&lng="+res[1];
+
+        Toast.makeText(this, "Requesting URL: "+URL, Toast.LENGTH_LONG).show();
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, URL, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+
+                try {
+                    JSONArray jsonArray = new JSONArray(response);
+
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(QR_SCANNING.this, "Error: "+error.toString(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        queue.add(stringRequest);
+
+
+    }
+
 }
