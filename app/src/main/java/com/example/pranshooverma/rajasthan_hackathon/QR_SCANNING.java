@@ -90,7 +90,7 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
                 Toast.makeText(this, "Result Not Found", Toast.LENGTH_SHORT).show();
             } else {
                 try {
-
+                    Display(result.getContents());
                     JSONObject obj = new JSONObject(result.getContents());
                     chasis = obj.getString("chasis_number");
                     progress.setMessage("Do not minimize the screen. Please Wait");
@@ -120,13 +120,25 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
     }
 
-    private void fetch_vehicle_wifi_mac(final String chasis,String lat,String lon,String SSO) {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Intent serviceIntent = new Intent(QR_SCANNING.this, WiFiCheckService.class);
+        stopService(serviceIntent);
+
+    }
+
+    private void fetch_vehicle_wifi_mac(final String chasis, String lat, String lon, String SSO) {
         //add volley in this for getting the mac address of the wifi
         StringRequest stringReques = new StringRequest(Request.Method.GET, constants.qr_send_url_to_get_ap + "?chesis=" + chasis+"&ssos=12345"+"&lat="+lat+"&lon="+lon, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 //       progress.dismiss();
                 Display(response);
+                constants.vehicleMAC = response;
+                Intent serviceIntent = new Intent(QR_SCANNING.this, WiFiCheckService.class);
+                startService(serviceIntent);
+
             }
         }, new Response.ErrorListener() {
             @Override
