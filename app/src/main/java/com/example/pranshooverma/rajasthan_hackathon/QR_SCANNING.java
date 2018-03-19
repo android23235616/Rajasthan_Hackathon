@@ -41,11 +41,16 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
     Button scan_qr;
     Button endTrip;
+    Button btnPay;
+
+    public static Context mContext;
 
     private IntentIntegrator qrscan;
 
+    public static Intent serviceIntent;
     ProgressDialog progress;
 
+    int flag = 0;
 
     //for location
     private Location mLastLocation;
@@ -72,6 +77,9 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
         updateUI();
 
+        mContext = getApplicationContext();
+        serviceIntent = new Intent(QR_SCANNING.this, WiFiCheckService.class);
+
         //setting onClick Listener of android
         scan_qr.setOnClickListener(new View.OnClickListener() {
 
@@ -91,12 +99,19 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
                 endPassengerTrip();
             }
         });
+
+        btnPay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                ///////////////CODE FOR ONLINE PAYMENT////////////////////
+
+            }
+        });
     }
 
     private void endPassengerTrip() {
-
-        String[] res = displayLocation();
-        updateData(res);
+        getCurrentLocation();
     }
 
     @Override
@@ -131,7 +146,7 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
     }
 
-    private void getCurrentLocation() {
+    public static void getCurrentLocation() {
         //fetching current location when app gets started
         if (mGoogleApiClient != null) {
             mGoogleApiClient.connect();
@@ -142,23 +157,43 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Intent serviceIntent = new Intent(QR_SCANNING.this, WiFiCheckService.class);
+        //Intent serviceIntent = new Intent(QR_SCANNING.this, WiFiCheckService.class);
         stopService(serviceIntent);
 
     }
 
     private void fetch_vehicle_wifi_mac(final String chasis, String lat, String lon, String SSO) {
         //add volley in this for getting the mac address of the wifi
-        StringRequest stringReques = new StringRequest(Request.Method.GET, constants.qr_send_url_to_get_ap + "?chesis=" + chasis+"&ssos=12345"+"&lat="+lat+"&lon="+lon, new Response.Listener<String>() {
+        String URL = "";
+        if(constants.tripStarted == false){
+            URL = constants.qr_send_url_to_get_ap + "?chesis=" + chasis+"&ssos=1234"+"&lat="+lat+"&lng="+lon;
+        }
+        else if(constants.tripStarted == true){
+            URL = constants.url_stop_trip + "?chesis=" + chasis+"&ssos=1234"+"&lat="+lat+"&lng="+lon;
+        }
+
+        StringRequest stringReques = new StringRequest(Request.Method.GET, URL, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 //       progress.dismiss();
                 Display(response);
-                constants.vehicleMAC = response;
-                Intent serviceIntent = new Intent(QR_SCANNING.this, WiFiCheckService.class);
-                startService(serviceIntent);
 
-                constants.tripStarted = true;
+                if(constants.tripStarted == false) {
+                    Display("Starting service");
+                    constants.vehicleMAC = response;
+                    startService(serviceIntent);
+                    constants.tripStarted = true;
+                }
+
+                else if(constants.tripStarted == true){
+                    Display("Stopping service");
+                    //stopService(serviceIntent);
+                    //constants.tripStarted = false;
+                    android.os.Process.killProcess(android.os.Process.myPid());
+                    Toast.makeText(getApplicationContext(), "App stopped", Toast.LENGTH_SHORT).show();
+                    //finish();
+                }
+
                 updateUI();
 
             }
@@ -177,11 +212,13 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
         if(constants.tripStarted == false){
             scan_qr.setVisibility(View.VISIBLE);
-            endTrip.setVisibility(View.GONE);
+            endTrip.setVisibility(View.INVISIBLE);
+            btnPay.setVisibility(View.INVISIBLE);
         }
         else if(constants.tripStarted == true){
-            scan_qr.setVisibility(View.GONE);
+            scan_qr.setVisibility(View.INVISIBLE);
             endTrip.setVisibility(View.VISIBLE);
+            btnPay.setVisibility(View.VISIBLE);
         }
 
     }
@@ -193,6 +230,7 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
     private void initialize() {
         scan_qr = (Button) findViewById(R.id.scan_qr);
         endTrip = (Button) findViewById(R.id.end_trip);
+        btnPay = (Button) findViewById(R.id.pay);
         qrscan = new IntentIntegrator(this);
         progress = new ProgressDialog(this);
         mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
@@ -296,10 +334,12 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
         a.execute();
     }
 
+
+
     private void updateData(String[] res) {
 
         RequestQueue queue = Volley.newRequestQueue(this);
-        String URL = constants.url_stop_trip+"?chesis="+constants.CHASSIS+"&SSOS=1234"+"&lat="+res[0]+"&lng="+res[1];
+        String URL = constants.url_stop_trip+"?chesis="+constants.CHASSIS+"&ssos=1234"+"&lat="+res[0]+"&lng="+res[1];
 
         Toast.makeText(this, "Requesting URL: "+URL, Toast.LENGTH_LONG).show();
 
@@ -328,5 +368,41 @@ public class QR_SCANNING extends AppCompatActivity implements GoogleApiClient.Co
 
 
     }
+
+
+    ////////////////////////////AsyncTask to Exit Passenger///////////////////////////////////////////
+    /*public class ExitPassengerTask extends AsyncTask<Object, Object, String[]> {
+
+        @Override
+        protected String[] doInBackground(Object... voids) {
+
+            String[] s = displayLocation();
+            return s;
+        }
+
+
+        @Override
+        protected void onPostExecute(String[] s) {
+            if (s[0] != null) {
+                progress.dismiss();
+
+                if(chasis!=null)
+                {
+                    updateData(s); //update data to the server
+                }
+                else
+                {
+                    Toast.makeText(QR_SCANNING.this, "QR IS NOT VALID", Toast.LENGTH_SHORT).show();
+                }
+                mGoogleApiClient.disconnect();
+            } else {
+                Toast.makeText(QR_SCANNING.this, "Please Try Again", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+    }
+
+*/
+
 
 }

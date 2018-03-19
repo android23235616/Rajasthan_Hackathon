@@ -25,5 +25,14 @@
         android:layout_centerHorizontal="true"
         android:text="END TRIP" />
 
+    <Button
+        android:id="@+id/pay"
+        android:textSize="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="100dp"
+        android:layout_below="@id/end_trip"
+        android:layout_centerHorizontal="true"
+        android:text="PAY ONLINE" />
+
 
 </RelativeLayout>

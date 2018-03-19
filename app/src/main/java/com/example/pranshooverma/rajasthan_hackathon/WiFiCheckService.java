@@ -209,7 +209,8 @@ public class WiFiCheckService extends Service implements GoogleApiClient.Connect
                 if(flag == 0 && prev == 1){
 /////////////////////////////////////////////To Do: WiFi Disconnected, update data////////////////////////////////////////////////
                     Toast.makeText(WiFiCheckService.this, "WiFi Disconnected", Toast.LENGTH_SHORT).show();
-                    getCurrentLocation();
+                    //getCurrentLocation();
+                    QR_SCANNING.getCurrentLocation();
                 }
 
                 if(flag == 0 && prev == 0){
@@ -218,10 +219,11 @@ public class WiFiCheckService extends Service implements GoogleApiClient.Connect
             }
         }};
 
+
     private void updateData(String[] res) {
 
         RequestQueue queue = Volley.newRequestQueue(this);
-        String URL = constants.url_stop_trip+"?chesis="+constants.CHASSIS+"&SSOS="+SSOS+"&lat="+res[0]+"&lng="+res[1];
+        String URL = constants.url_stop_trip+"?chesis="+constants.CHASSIS+"&ssos="+SSOS+"&lat="+res[0]+"&lng="+res[1];
 
         Toast.makeText(this, "Requesting URL: "+URL, Toast.LENGTH_LONG).show();
 
@@ -234,6 +236,9 @@ public class WiFiCheckService extends Service implements GoogleApiClient.Connect
                     Toast.makeText(WiFiCheckService.this, response, Toast.LENGTH_SHORT).show();
                     flag = 0;
                     prev = 0;
+
+                    QR_SCANNING.mContext.stopService(QR_SCANNING.serviceIntent);
+
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -248,10 +253,12 @@ public class WiFiCheckService extends Service implements GoogleApiClient.Connect
             }
         });
 
+
         queue.add(stringRequest);
 
 
     }
+
 
 
     @Override
